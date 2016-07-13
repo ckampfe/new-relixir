@@ -22,12 +22,19 @@ defmodule NewRelixir do
 
     :ok = :statman_server.add_subscriber(:statman_aggregator)
 
-    if (app_name = Application.get_env(:new_relixir, :application_name)) && (license_key = Application.get_env(:new_relixir, :license_key)) do
-      Application.put_env(:newrelic, :application_name, to_char_list(app_name))
-      Application.put_env(:newrelic, :license_key, to_char_list(license_key))
+    {:ok, _pid} = with app_name <- Application.get_env(:new_relixir, :application_name),
+                  license_key <- Application.get_env(:new_relixir, :license_key) do
+                    Application.put_env(:newrelic, :application_name, to_char_list(app_name))
+                    Application.put_env(:newrelic, :license_key, to_char_list(license_key))
+                    :newrelic_poller.start_link(&:newrelic_statman.poll/0)
+                  end
 
-      {:ok, _} = :newrelic_poller.start_link(&:newrelic_statman.poll/0)
-    end
+         #     if (app_name = Application.get_env(:new_relixir, :application_name)) && (license_key = Application.get_env(:new_relixir, :license_key)) do
+         #       Application.put_env(:newrelic, :application_name, to_char_list(app_name))
+         #       Application.put_env(:newrelic, :license_key, to_char_list(license_key))
+         # 
+         #       {:ok, _} = :newrelic_poller.start_link(&:newrelic_statman.poll/0)
+         #     end
 
     result
   end
